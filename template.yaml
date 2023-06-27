@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  stepfunctions-aliases
+
+  Sample SAM Template for stepfunctions-aliases
+
+Resources:
+  AliasStateMachineFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Invocation alarm for Alias State Machine
+      Namespace: AWS/States
+      MetricName: ExecutionsFailed
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Ref AliasStateMachine
+        - Name: Alias
+          Value: "main"
+      Statistic: Sum
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: 1
+      EvaluationPeriods: 1
+      Period: 300
+      TreatMissingData: notBreaching
+
+
+  StateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/vendedlogs/states/alias-sample-logs
+
+  StatesExecutionRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service:
+                  - !Sub states.${AWS::Region}.amazonaws.com
+              Action: "sts:AssumeRole"
+        Path: "/"
+        Policies:
+          - PolicyName: StatesExecutionPolicy
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "cloudwatch:*"
+                    - "logs:*"
+                  Resource: "*"
+  AliasStateMachine:
+    Type: AWS::Serverless::StateMachine
+    DependsOn: StateMachineLogGroup
+    Properties:
+      Type: EXPRESS
+      AutoPublishAlias: "main"
+      Name: "SampleAliasMachine"
+      DefinitionUri: statemachine/alias.asl.json
+      Role:
+        Fn::GetAtt: [ StatesExecutionRole, Arn ]
+      Logging:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt StateMachineLogGroup.Arn
+        IncludeExecutionData: True
+        Level: ALL        
+      DeploymentPreference: 
+        Alarms: 
+          - !Ref AliasStateMachineFailureAlarm
+        Interval: 2
+        Percentage: 50
+        Type: LINEAR
+  

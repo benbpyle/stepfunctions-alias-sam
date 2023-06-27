@@ -1,0 +1,37 @@
+{
+  "StartAt": "Basic Choice",
+  "States": {
+    "Basic Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.type",
+          "StringEquals": "B",
+          "Next": "Passed"
+        },
+        {
+          "Variable": "$.type",
+          "StringEquals": "C",
+          "Next": "Passed"
+        },
+        {
+          "Variable": "$.type",
+          "StringEquals": "D",
+          "Next": "Passed"
+        },
+        {
+          "Variable": "$.type",
+          "StringEquals": "A",
+          "Next": "Failed"
+        }
+      ]
+    },
+    "Passed": {
+      "Type": "Succeed"
+    },
+    "Failed": {
+      "Type": "Fail"
+    }    
+  },
+  "TimeoutSeconds": 30
+}
